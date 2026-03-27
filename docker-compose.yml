@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # 1. 空間資料庫 (PostgreSQL + PostGIS)
+  db:
+    image: postgis/postgis:15-3.4
+    container_name: raingod_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: raingod
+      TZ: Asia/Taipei
+    ports:
+      - "5433:5432" # 避開本機 5432，改用 5433 連接
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # 2. 背景任務與快取 (Redis)
+  redis:
+    image: redis:alpine
+    container_name: raingod_redis
+    restart: always 
+    environment:
+      TZ: Asia/Taipei
+    ports:
+      - "6379:6379"
+
+  # 3. Python 後端 API (FastAPI)
+  api:
+    build: ./backend
+    container_name: raingod_api
+    restart: always
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=raingod
+      - DB_USER=postgres
+      - DB_PASSWORD=${DB_PASSWORD}
+      - CWA_API_KEY=${CWA_API_KEY}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app # 實時代碼同步
+    depends_on:
+      - db
+      - redis
+
+  # 4. 前端網頁 (Vue 3 + Vite)
+  frontend:
+    image: node:20-slim
+    container_name: raingod_web
+    working_dir: /app
+    volumes:
+      - ./frontend:/app # 實時代碼同步
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
+    # 啟動開發伺服器並允許外部存取
+    command: sh -c "npm install && npm run dev -- --host"
+
+volumes:
+  pgdata:
