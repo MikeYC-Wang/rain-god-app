@@ -1,1 +1,16 @@
 @import "tailwindcss";
+
+@theme {
+  --color-pastel-blue: #AEDFF7;
+  --color-pastel-blue-dark: #8ECFEF;
+  --color-warm-yellow: #FFD166;
+  --color-warm-yellow-dark: #F0C050;
+  --color-mist-gray: #E2E8F0;
+  --color-light-bg: #FAFAFA;
+}
+
+body {
+  font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  background-color: var(--color-light-bg);
+  color: #334155;
+}
