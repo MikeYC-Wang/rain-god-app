@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { setOptions, importLibrary } from '@googlemaps/js-api-loader'
+import { useGoogleMaps } from '../composables/useGoogleMaps.js'
 
 const mapContainer = ref(null)
 const map = ref(null)
