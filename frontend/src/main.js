@@ -25,6 +25,7 @@ import {
 
 import './style.css'
 import App from './App.vue'
+import router from './router'
 
 library.add(
   faCloudRain,
@@ -49,5 +50,6 @@ library.add(
 )
 
 const app = createApp(App)
+app.use(router)
 app.component('font-awesome-icon', FontAwesomeIcon)
 app.mount('#app')

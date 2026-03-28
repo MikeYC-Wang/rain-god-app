@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { Loader } from '@googlemaps/js-api-loader'
+import { setOptions, importLibrary } from '@googlemaps/js-api-loader'
 
 const mapContainer = ref(null)
 const map = ref(null)
@@ -73,7 +73,10 @@ const pastelMapStyles = [
   },
 ]
 
-let googleRef = null
+let mapsLib = null
+let markerLib = null
+let routesLib = null
+let coreLib = null
 let directionsService = null
 
 onMounted(async () => {
@@ -85,16 +88,25 @@ onMounted(async () => {
   }
 
   try {
-    const loader = new Loader({
-      apiKey,
-      version: 'weekly',
-      libraries: ['places', 'geometry', 'routes'],
-    })
+    setOptions({ apiKey, version: 'weekly' })
 
-    const google = await loader.load()
-    googleRef = google
+    const [mapsResult, routesResult, markerResult, , coreResult] = await Promise.all([
+      importLibrary('maps'),
+      importLibrary('routes'),
+      importLibrary('marker'),
+      importLibrary('geometry'),
+      importLibrary('core'),
+    ])
 
-    map.value = new google.maps.Map(mapContainer.value, {
+    mapsLib = mapsResult
+    markerLib = markerResult
+    routesLib = routesResult
+    coreLib = coreResult
+
+    const { Map } = mapsResult
+    const { DirectionsService } = routesResult
+
+    map.value = new Map(mapContainer.value, {
       center: TAIWAN_CENTER,
       zoom: DEFAULT_ZOOM,
       styles: pastelMapStyles,
@@ -102,12 +114,10 @@ onMounted(async () => {
       streetViewControl: false,
       fullscreenControl: false,
       zoomControl: true,
-      zoomControlOptions: {
-        position: google.maps.ControlPosition.RIGHT_CENTER,
-      },
+      mapId: 'raingod_pastel_map',
     })
 
-    directionsService = new google.maps.DirectionsService()
+    directionsService = new DirectionsService()
 
     map.value.addListener('click', handleMapClick)
 
@@ -118,37 +128,36 @@ onMounted(async () => {
   }
 })
 
+function createMarkerContent(color, label) {
+  const div = document.createElement('div')
+  div.style.width = '20px'
+  div.style.height = '20px'
+  div.style.borderRadius = '50%'
+  div.style.backgroundColor = color
+  div.style.border = '2px solid #ffffff'
+  div.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)'
+  div.title = label
+  return div
+}
+
 function handleMapClick(event) {
   const latLng = event.latLng
+  const { AdvancedMarkerElement } = markerLib
 
   if (!startPoint.value) {
     startPoint.value = { lat: latLng.lat(), lng: latLng.lng() }
-    startMarker.value = new googleRef.maps.Marker({
+    startMarker.value = new AdvancedMarkerElement({
       position: latLng,
       map: map.value,
-      icon: {
-        path: googleRef.maps.SymbolPath.CIRCLE,
-        scale: 10,
-        fillColor: '#22c55e',
-        fillOpacity: 1,
-        strokeColor: '#ffffff',
-        strokeWeight: 2,
-      },
+      content: createMarkerContent('#22c55e', '起點'),
       title: '起點',
     })
   } else if (!endPoint.value) {
     endPoint.value = { lat: latLng.lat(), lng: latLng.lng() }
-    endMarker.value = new googleRef.maps.Marker({
+    endMarker.value = new AdvancedMarkerElement({
       position: latLng,
       map: map.value,
-      icon: {
-        path: googleRef.maps.SymbolPath.CIRCLE,
-        scale: 10,
-        fillColor: '#ef4444',
-        fillOpacity: 1,
-        strokeColor: '#ffffff',
-        strokeWeight: 2,
-      },
+      content: createMarkerContent('#ef4444', '終點'),
       title: '終點',
     })
     fetchRoute()
@@ -162,13 +171,13 @@ async function fetchRoute() {
     const result = await directionsService.route({
       origin: startPoint.value,
       destination: endPoint.value,
-      travelMode: googleRef.maps.TravelMode.DRIVING,
+      travelMode: routesLib.TravelMode.DRIVING,
     })
 
     const path = result.routes[0].overview_path
     routeCoords.value = path.map((p) => ({ lat: p.lat(), lng: p.lng() }))
 
-    routePolyline.value = new googleRef.maps.Polyline({
+    routePolyline.value = new mapsLib.Polyline({
       path: path,
       geodesic: true,
       strokeColor: '#AEDFF7',
@@ -177,7 +186,7 @@ async function fetchRoute() {
       map: map.value,
     })
 
-    const bounds = new googleRef.maps.LatLngBounds()
+    const bounds = new coreLib.LatLngBounds()
     path.forEach((p) => bounds.extend(p))
     map.value.fitBounds(bounds, 60)
   } catch (err) {
@@ -187,11 +196,11 @@ async function fetchRoute() {
 
 function resetRoute() {
   if (startMarker.value) {
-    startMarker.value.setMap(null)
+    startMarker.value.map = null
     startMarker.value = null
   }
   if (endMarker.value) {
-    endMarker.value.setMap(null)
+    endMarker.value.map = null
     endMarker.value = null
   }
   if (routePolyline.value) {

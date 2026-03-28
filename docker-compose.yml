@@ -57,6 +57,9 @@ services:
       - "5173:5173"
     environment:
       - VITE_GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
+      - API_URL=http://api:8000
+    depends_on:
+      - api
     # 啟動開發伺服器並允許外部存取
     command: sh -c "npm install && npm run dev -- --host"
 
