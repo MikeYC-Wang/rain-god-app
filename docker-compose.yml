@@ -57,6 +57,7 @@ services:
       - "5173:5173"
     environment:
       - VITE_GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
+      - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
       - API_URL=http://api:8000
     depends_on:
       - api

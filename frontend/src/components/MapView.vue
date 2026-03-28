@@ -80,41 +80,25 @@ let coreLib = null
 let directionsService = null
 
 onMounted(async () => {
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
-  if (!apiKey) {
-    error.value = '缺少 Google Maps API Key，請設定 VITE_GOOGLE_MAPS_API_KEY 環境變數。'
-    loading.value = false
-    return
-  }
-
   try {
-    setOptions({ apiKey, version: 'weekly' })
+    const libs = await useGoogleMaps()
 
-    const [mapsResult, routesResult, markerResult, , coreResult] = await Promise.all([
-      importLibrary('maps'),
-      importLibrary('routes'),
-      importLibrary('marker'),
-      importLibrary('geometry'),
-      importLibrary('core'),
-    ])
+    mapsLib = libs.maps
+    markerLib = libs.marker
+    routesLib = libs.routes
+    coreLib = libs.core
 
-    mapsLib = mapsResult
-    markerLib = markerResult
-    routesLib = routesResult
-    coreLib = coreResult
-
-    const { Map } = mapsResult
-    const { DirectionsService } = routesResult
+    const { Map } = libs.maps
+    const { DirectionsService } = libs.routes
 
     map.value = new Map(mapContainer.value, {
       center: TAIWAN_CENTER,
       zoom: DEFAULT_ZOOM,
-      styles: pastelMapStyles,
       mapTypeControl: false,
       streetViewControl: false,
       fullscreenControl: false,
       zoomControl: true,
-      mapId: 'raingod_pastel_map',
+      mapId: '8f9a66d5b0fbbd3bea8184a7',
     })
 
     directionsService = new DirectionsService()
@@ -123,7 +107,9 @@ onMounted(async () => {
 
     loading.value = false
   } catch (err) {
-    error.value = '地圖載入失敗：' + err.message
+    error.value = err.message.includes('API Key')
+      ? err.message
+      : '地圖載入失敗：' + err.message
     loading.value = false
   }
 })

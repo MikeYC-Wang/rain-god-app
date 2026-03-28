@@ -4,9 +4,9 @@ let initialized = false
 let loadPromise = null
 
 function initAndLoad() {
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+  const apiKey = import.meta.env.GOOGLE_MAPS_API_KEY
   if (!apiKey) {
-    return Promise.reject(new Error('缺少 Google Maps API Key，請設定 VITE_GOOGLE_MAPS_API_KEY 環境變數。'))
+    return Promise.reject(new Error('缺少 Google Maps API Key，請設定 GOOGLE_MAPS_API_KEY 環境變數。'))
   }
 
   if (!initialized) {
